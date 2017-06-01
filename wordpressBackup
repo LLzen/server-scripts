@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# will backup wordpress database and dump raw files used by web server.
+# recovery is simple matter of extracting files to web server and importing the db (drop any existing Wordpres DB first and then create so that its empty)
+#td: add quick check to see if there is enough disk space for the archieve... going to have to just use the raw uncompressed size as check amount
+
+
+TIMESTAMP=`date '+%Y%m%d_%H%M%S'`
+BACKUPDIRECTORY=/backup/
+
+DBNAME=wordpress
+DBUSER=<dbuser>
+DBPASSWORD=<dbuser_pass>
+
+WORDPRESSROOT=/var/www/wordpress/
+
+/usr/bin/mysqldump -u $DBUSER -p$DBPASSWORD $DBNAME | /bin/gzip > $BACKUPDIRECTORY/database_$TIMESTAMP.sql.gz
+
+
+#create dump of all files - sets working directory 1st and the last '.' is to include hidden files ('*' would not include hidden))
+(cd $WORDPRESSROOT && tar -zcvf $BACKUPDIRECTORY/files_$TIMESTAMP.tar.gz .)
