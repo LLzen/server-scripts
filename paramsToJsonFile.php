@@ -1,4 +1,6 @@
 <?php
+//NOTE! if pure JSON output is desired then comment line 65 and UNcomment line 64!
+ 
 //script that will convert all POST and GET params to json format and write to a file.
 //for example: use with IFTTT 
 
