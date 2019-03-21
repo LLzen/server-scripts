@@ -22,6 +22,11 @@ $requiredItems=array("UserName", "Text"); //define the items that we MUST have. 
 ///////////////
 
 
+if ($allParams===NULL) {
+    echo("No params! - Exiting.");
+    exit;
+}
+
 //create array with only the items that we want
 $toAdd=array();
 foreach ($allParams as $param_name => $param_val) {
