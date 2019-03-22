@@ -1,6 +1,4 @@
 <?php
-//NOTE! if pure JSON output is desired then comment line 65 and UNcomment line 64!
- 
 //script that will convert all POST and GET params to json format and write to a file.
 //for example: use with IFTTT 
 
@@ -9,28 +7,31 @@
 
 ////////// SETUP
 $filename="foo.txt";
+$subDirectory="./dataOut/";
 $maxDataItems=50;
 ////////// END SETUP
 
 $debug=false;
+$showOutput=true; //set to show the output (show updates)
+$addFakeData=false;
 
 $allParams=createArrayFromParams();
 
 /////////////// SETUP:
-$ignoreParams=array("TweetEmbedCode", "LocationMapImageUrl"); //define the items we DO NOT want (they will be filtered)
-$requiredItems=array("UserName", "Text"); //define the items that we MUST have. data will not be added if any of these are missing e.g. array("d", "x") requires data elements: 'd' and 'x'
+$ignoreParams=array(); //define the items we DO NOT want (they will be filtered)
+$requiredItems=array("symbol", "start", "end", "data"); //define the items that we MUST have. data will not be added if any of these are missing e.g. array("d", "x") requires data elements: 'd' and 'x'
 ///////////////
+
 
 
 if ($allParams===NULL) {
     echo("No params! - Exiting.");
     exit;
 }
-
 //create array with only the items that we want
 $toAdd=array();
 foreach ($allParams as $param_name => $param_val) {
-    if (!isItemInArray($param_name, $ignoreParams)) {
+    if (!isItemInArray($param_name, $ignoreParams, $debug)) {
         $toAdd[$param_name] = $param_val;
     }
 }
@@ -41,48 +42,37 @@ if (count($toAdd)>0) {
     $approved=true;
     $err="";
     foreach ($requiredItems as $param_name) {
-        if (!isItemInArray($param_name, array_keys($toAdd))) {
+        if (!isItemInArray($param_name, array_keys($toAdd), $debug)) {
             $approved=false;
             $err .= "missing:" . $param_name . "\n";
         }
     }
 
     //debug & failed?
-    if ($debug && $err!="") {echo("<pre>\n" . $err . "</pre>");}
+    if ($err!="") {echo("<pre>\n" . $err . "</pre>");}
 }
-
-//var_dump(json_encode($toAdd));
 
 if ($approved) {
     //manually add a timestamp
-    $toAdd[t] = date("Y-m-d H:i:s");
+    $toAdd["t"] = date("Y-m-d H:i:s");
     
     //addJsonToFile($json);
     if ($debug) {echo("Adding: <pre>" . prettyPrint(json_encode($toAdd)). "</pre>");}
     addJsonToFile($toAdd);
     echo("ok");
-} else {
-    $contents=file_get_contents($filename);
-    if ($debug) {
-        echo("<pre>" . prettyPrint($contents). "</pre>");
-    } else {
-        //echo($contents);
-      	echo("<pre>" . prettyPrint($contents). "</pre>"); //testing phase so we show nicely
-    }
 }
-
 
 //var_dump($allParams);
 
 function addJsonToFile($jsonToAdd) {
-    global $debug, $filename, $maxDataItems;
+    global $debug, $filename, $maxDataItems, $showOutput, $addFakeData;
     $defaultFileOuter='{
         "v": "1",
         "d": [
-            {"t": "1970-01-01 11:22:33", "d":"It\'s early days!"},
-            {"t": "1970-01-01 11:22:33", "d":"Nothing is here yet :("}
         ]
     }';
+
+    
         
     $fp = fopen($filename, "a+");
     
@@ -98,6 +88,12 @@ function addJsonToFile($jsonToAdd) {
         
         $json=json_decode($contents, true);
 
+        
+        if ($addFakeData) {
+            $json["d"][]=json_decode('{"t": "1970-01-01 11:22:33", "d":"It\'s early days!"}');
+            $json["d"][]=json_decode('{"t": "1970-01-01 11:22:33", "d":"Nothing is here yet :("}');
+        }
+
         $dataLength=count($json["d"]);
 
         while ($dataLength>$maxDataItems) {
@@ -107,7 +103,7 @@ function addJsonToFile($jsonToAdd) {
 
         $json["d"][]=$jsonToAdd; //add the new data
         
-        if ($debug) {echo("Updated:<br><pre>" . prettyPrint(json_encode($json)) . "</pre>");}
+        if ($debug || $showOutput) {echo("Updated:<br><pre>" . prettyPrint(json_encode($json)) . "</pre>");}
         ftruncate($fp, 0); //we want to remove everything in the current file.
         $contents=json_encode($json);
         fwrite($fp, $contents);
@@ -209,5 +205,4 @@ function prettyPrint( $json )
 }
 
 ?>
-
 
